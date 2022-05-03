@@ -1,8 +1,7 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(velodyne_driver)
 
-add_compile_options(-std=c++11)
-
+add_compile_options(-std=c++14)
 set(${PROJECT_NAME}_CATKIN_DEPS 
     diagnostic_updater
     dynamic_reconfigure
