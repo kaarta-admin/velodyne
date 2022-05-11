@@ -55,13 +55,13 @@ POINT_CLOUD_REGISTER_POINT_STRUCT(velodyne_pointcloud::PointXYZIR,
                                   (float, y, y)
                                   (float, z, z)
                                   (float, intensity, intensity)
-                                  (uint16_t, ring, ring))
+                                  (std::uint16_t, ring, ring))
 
 POINT_CLOUD_REGISTER_POINT_STRUCT(velodyne_pointcloud::RawSensorPoint,
-                                  (uint8_t, intensity, intensity)
+                                  (std::uint8_t, intensity, intensity)
                                   (float, azimuth, azimuth)
-                                  (uint16_t, distance, distance)
-                                  (uint16_t, ring, ring)
+                                  (std::uint16_t, distance, distance)
+                                  (std::uint16_t, ring, ring)
                                   (double, time, time)
                                   );
 
