@@ -251,6 +251,7 @@ bool VelodyneDriver::configureForModelByte(uint8_t new_byte)
     default:
       ROS_ERROR_THROTTLE(1, "Invalid model byte: %u", uint32_t(new_byte));
   }
+  return true;
 }
 
 void VelodyneDriver::updateNPackets()

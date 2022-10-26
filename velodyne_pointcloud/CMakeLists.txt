@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(velodyne_pointcloud)
-add_compile_options(-std=c++11) 
+add_compile_options(-std=c++14) 
 
 set(${PROJECT_NAME}_CATKIN_DEPS
     angles
