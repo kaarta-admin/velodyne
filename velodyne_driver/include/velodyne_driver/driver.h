@@ -66,7 +66,6 @@ private:
   boost::shared_ptr<Input> input_;
   ros::Publisher output_;
   ros::Publisher position_packet_pub_;
-  ros::Publisher rpm_pub_;
 
   /** diagnostics updater */
   ros::Timer diag_timer_;
@@ -81,10 +80,12 @@ private:
 
   void setRPM(double frequency);        // set the expected RPM of the system
   int num_same_rpm_;
-  double last_rpm_;
+  double last_rpm_, last_rpm_raw_;
   double packet_rate;                   // packet frequency (Hz)
 
   bool init_success;
+
+  uint8_t last_pps_status_;
 
   bool dual_return_;
   int force_laser_model_;

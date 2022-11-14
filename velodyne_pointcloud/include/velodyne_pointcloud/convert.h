@@ -36,7 +36,7 @@ namespace velodyne_pointcloud
   {
   public:
 
-    Convert(ros::NodeHandle node, ros::NodeHandle private_nh);
+    Convert(ros::NodeHandle &node, ros::NodeHandle &private_nh);
     ~Convert() {}
 
     bool initSuccessful();
@@ -46,6 +46,7 @@ namespace velodyne_pointcloud
     void callback(velodyne_pointcloud::CloudNodeConfig &config,
                 uint32_t level);
     void processScan(const velodyne_msgs::VelodyneScan::ConstPtr &scanMsg);
+    void calculateRPM(const velodyne_msgs::VelodyneScan::ConstPtr &scanMsg);
 
     ///Pointer to dynamic reconfigure service srv_
     boost::shared_ptr<dynamic_reconfigure::Server<velodyne_pointcloud::
@@ -54,6 +55,7 @@ namespace velodyne_pointcloud
     boost::shared_ptr<velodyne_rawdata::RawData> data_;
     ros::Subscriber velodyne_scan_;
     ros::Publisher output_;
+    ros::Publisher rpm_pub_;
 
     /** diagnostics updater */
     ros::Timer diag_timer_;
@@ -62,6 +64,13 @@ namespace velodyne_pointcloud
     double diag_max_freq_;
     boost::shared_ptr<diagnostic_updater::TopicDiagnostic> diag_topic_;
     void diagTimerCallback(const ros::TimerEvent &event);
+    void timestampDiagnostic(diagnostic_updater::DiagnosticStatusWrapper &stat);
+    void rpmDiagnostic(diagnostic_updater::DiagnosticStatusWrapper &stat);
+    void pointCountDiagnostic(diagnostic_updater::DiagnosticStatusWrapper &stat);
+
+    float last_rpm_, last_rpm_raw_;
+
+    bool remove_nan_;
     
     // A point cloud with same time and frame ID as raw data
     PointcloudXYZIADRT outMsg;

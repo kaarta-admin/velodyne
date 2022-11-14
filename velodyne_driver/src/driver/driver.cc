@@ -29,7 +29,7 @@ namespace velodyne_driver
 {
 
 VelodyneDriver::VelodyneDriver(ros::NodeHandle node,
-                               ros::NodeHandle private_nh) : init_success(true)
+                               ros::NodeHandle private_nh) : init_success(true), last_pps_status_(-1)
 {
   // use private node handle to get parameters
   private_nh.param("frame_id", config_.frame_id, std::string("velodyne"));
@@ -172,14 +172,14 @@ VelodyneDriver::VelodyneDriver(ros::NodeHandle node,
   ROS_INFO("expected frequency: %.3f (Hz)", diag_freq);
 
   using namespace diagnostic_updater;
-  diag_topic_.reset(new TopicDiagnostic("velodyne points", diagnostics_,
+  diag_topic_.reset(new TopicDiagnostic("driver velodyne packets", diagnostics_,
                                         FrequencyStatusParam(&diag_min_freq_,
                                                              &diag_max_freq_,
                                                              0.05, 1),
                                         TimeStampStatusParam(0.0, 0.5)));
   // diag_max_position_freq_ = publish_position_packets_at_same_frequency_as_scans_ ? diag_freq : 140;
   diag_min_position_freq_ = diag_max_position_freq_;
-  diag_position_topic_.reset(new TopicDiagnostic("velodyne position packets", diagnostics_,
+  diag_position_topic_.reset(new TopicDiagnostic("driver velodyne position packets", diagnostics_,
                                         FrequencyStatusParam(&diag_min_position_freq_,
                                                              &diag_max_position_freq_,
                                                              0.05, 1),
@@ -204,8 +204,7 @@ VelodyneDriver::VelodyneDriver(ros::NodeHandle node,
   // raw packet output topic
   output_ =
     node.advertise<velodyne_msgs::VelodyneScan>("velodyne_packets", 10);
-  rpm_pub_ =
-    node.advertise<std_msgs::Float32>("velodyne_rpm", 10);
+
   if (position_port != 0){
     position_packet_pub_ =
       node.advertise<velodyne_msgs::VelodynePositionPacket>("velodyne_position_packets", 10);
@@ -426,6 +425,7 @@ bool VelodyneDriver::poll(void)
     // convert delta angle to delta revolutions and then divide by delta time
     float rpm = ( ( (36000*num_revolutions + last_azimuth - first_azimuth) / 100.) / (360) )/((scan->packets.back().stamp - scan->packets.front().stamp).toSec());
     rpm = rpm * 60; // convert rev/sec to rev/min
+    last_rpm_raw_ = rpm;
     float rpm_rounded = ( ((int)(rpm+30)) / 60) * 60;
     ROS_DEBUG_THROTTLE(10, "number packets: %d, first azimuth: %f, last_azimuth: %f, num revolutions: %d Detected RPM: %f - rounded to multiple of 60: %f",
                           (int) scan->packets.size(), first_azimuth/100.0f, last_azimuth/100.0f, num_revolutions, rpm, rpm_rounded);
@@ -452,9 +452,6 @@ bool VelodyneDriver::poll(void)
       num_same_rpm_ = 0;
       last_rpm_ = rpm_rounded;
     }
-    std_msgs::Float32 out;
-    out.data = rpm;
-    rpm_pub_.publish(out);
   }
 
   // publish message using time of first packet
@@ -483,6 +480,8 @@ bool VelodyneDriver::poll(void)
   if(publish_position_packets_at_same_frequency_as_scans_){
     velodyne_msgs::VelodynePositionPacket position_packet = input_->getPositionPacket();
     if (position_packet.stamp.sec > 0){
+      last_pps_status_ = position_packet.data[0xCA];
+
       position_packet_pub_.publish(position_packet);
 
       // ROS_WARN("GPS data time stamp: " << gps_data_.header.stamp);
@@ -511,8 +510,10 @@ bool VelodyneDriver::pollPosition(void){
     int rc = input_->getPositionPacket(&position_packet_, config_.time_offset);
     if (rc == 0){ // got a full packet?
       // if we aren't throttling publishing to only once per scan
-      if (!publish_position_packets_at_same_frequency_as_scans_){
+      auto new_pps_status = position_packet_.data[0xCA];
+      if (!publish_position_packets_at_same_frequency_as_scans_ || last_pps_status_ != new_pps_status){
         position_packet_pub_.publish(position_packet_);
+        last_pps_status_ = new_pps_status;
 
         // if we have new gps data, publish it
         // ROS_WARN("GPS data time stamp: " << gps_data_.header.stamp);
@@ -537,40 +538,12 @@ void VelodyneDriver::callback(velodyne_driver::VelodyneNodeConfig &config,
 
 void VelodyneDriver::produce_diagnostics(diagnostic_updater::DiagnosticStatusWrapper &stat)
 {
-  stat.summary(diagnostic_msgs::DiagnosticStatus::OK, "Velodyne OK");
-  switch(input_->getPPSStatus()){
-    case 0:
-      stat.add("PPS Status", "No PPS detected");
-      stat.summary(diagnostic_msgs::DiagnosticStatus::WARN, "No PPS detected");
-      ROS_DEBUG_THROTTLE(0.5, "No PPS Detected");
-      break;
-    case 1:
-      stat.add("PPS Status", "Synchronizing to PPS");
-      stat.summary(diagnostic_msgs::DiagnosticStatus::WARN, "Synchronizing to PPS");
-      ROS_WARN_THROTTLE(0.5, "Synchronizing PPS");
-      break;
-    case 2:
-      stat.add("PPS Status", "PPS Locked");
-      break;
-    case 3:
-      stat.add("PPS Status", "Error");
-      stat.summary(diagnostic_msgs::DiagnosticStatus::ERROR, "PPS Error");
-      ROS_WARN_THROTTLE(0.5, "PPS Error");
-      break;
-    default:
-      stat.add("PPS Status", input_->getPPSStatus());
-      stat.summary(diagnostic_msgs::DiagnosticStatus::WARN, "Unknown PPS Status");
-      ROS_WARN_THROTTLE(0.5, "Unknown PPS Status");
-  };
-  // sensor_msgs::NavSatFix gps_data = input_->getGPSData();
-  // velodyne_msgs::VelodynePositionPacket packet_ = input_->getPositionPacket();
-  // stat.add("GPS Location Timestamp", gps_data.header.stamp);
-  // stat.add("GPS Location Latitude", gps_data.latitude);
-  // stat.add("GPS Location Longitude", gps_data.longitude);
-  // stat.add("GPS Location Altitude", gps_data.altitude);
-  stat.add("Detected RPM", config_.rpm);
-  stat.add("Last full revolution of sensor's rpm", last_rpm_);
-  // stat.add("Position Packet timestamp", packet_.stamp);
+  std::stringstream ss;
+  stat.summary(diagnostic_msgs::DiagnosticStatus::OK, "Velodyne Driver OK");
+  stat.add("Calculated RPM", last_rpm_raw_);
+  stat.add("Calculated RPM (rounded)", last_rpm_);
+  stat.add("set RPM", config_.rpm);
+  stat.add("Packets per scan", config_.npackets);
 }
 
 void VelodyneDriver::diagTimerCallback(const ros::TimerEvent &event)

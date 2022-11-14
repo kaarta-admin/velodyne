@@ -37,33 +37,35 @@ if [ -f "$infile" ]; then
     exit 15
   fi
 
-  echo "Verifiying/Fixing bag integrity"
-  
-  rosrun stencil_scripts kaarta_bag_verification.py "${outfile%.bag}_raw_conv.bag" --fix --no_velo_timesync --output "$outfile"
-  res_bag_fixing=$?
-  if [ ! $res_bag_fixing -eq 0 ]; then
-    echo "Failed to fix bag. Exit code = $res_bag_fixing"
-    exit 11
-  fi
-  if [ ! -f "$outfile" ]; then
-    echo "ERROR: Could not fix bag file"
-    exit 11
-  fi
+  mv "${outfile%.bag}_raw_conv.bag" "${outfile}"
 
-  # get rosbag info to see if there are packets in it
-  rosbag_info=$(rosbag info "$outfile")
-  echo "$rosbag_info"
-  has_lidar_packets=$(echo "$rosbag_info" | grep -E '/velodyne_packets|/os1' && echo "true" || echo "false")
-  if [[ "$has_lidar_packets" == "false" ]]; then
-    echo "ERROR: Bag file does not contain lidar data. Please select a different bag file. Rosbag info = $rosbag_info"
-    exit 15
-  fi
-  real_path="$(realpath "$outfile")"
-  echo "Finished converting pcap to bag success: Output = $real_path"
-  rm "${outfile%.bag}_raw_conv.bag"
-else
-  echo "ERROR: Input file: $infile does not exist"
-  exit 1
+#   echo "Verifiying/Fixing bag integrity"
+  
+#   rosrun stencil_scripts kaarta_bag_verification.py "${outfile%.bag}_raw_conv.bag" --fix --no_velo_timesync --output "$outfile"
+#   res_bag_fixing=$?
+#   if [ ! $res_bag_fixing -eq 0 ]; then
+#     echo "Failed to fix bag. Exit code = $res_bag_fixing"
+#     exit 11
+#   fi
+#   if [ ! -f "$outfile" ]; then
+#     echo "ERROR: Could not fix bag file"
+#     exit 11
+#   fi
+
+#   # get rosbag info to see if there are packets in it
+#   rosbag_info=$(rosbag info "$outfile")
+#   echo "$rosbag_info"
+#   has_lidar_packets=$(echo "$rosbag_info" | grep -E '/velodyne_packets|/os1' && echo "true" || echo "false")
+#   if [[ "$has_lidar_packets" == "false" ]]; then
+#     echo "ERROR: Bag file does not contain lidar data. Please select a different bag file. Rosbag info = $rosbag_info"
+#     exit 15
+#   fi
+#   real_path="$(realpath "$outfile")"
+#   echo "Finished converting pcap to bag success: Output = $real_path"
+#   rm "${outfile%.bag}_raw_conv.bag"
+# else
+#   echo "ERROR: Input file: $infile does not exist"
+#   exit 1
 fi
 
 exit 0

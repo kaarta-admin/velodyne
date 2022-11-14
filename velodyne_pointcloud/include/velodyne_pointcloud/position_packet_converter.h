@@ -22,8 +22,12 @@
 #include <sensor_msgs/Imu.h>
 #include <sensor_msgs/NavSatFix.h>
 #include <stencil_msgs/GPS_NMEA_Stamped.h>
+#include <velodyne_msgs/VelodynePPS.h>
 
 #include <velodyne_msgs/VelodynePositionPacket.h>
+
+#include <diagnostic_updater/diagnostic_updater.h>
+#include <diagnostic_updater/publisher.h>
 
 namespace velodyne_pointcloud
 {
@@ -51,9 +55,10 @@ namespace velodyne_pointcloud
     void parseNmeaString(const char * nmea_string, sensor_msgs::NavSatFix& nav_sat_fix);
 
     ros::Subscriber velodyne_packet_sub_;
-    ros::Publisher  imu_output_pub_, gnss_raw_output_pub_, gnss_fix_output_pub_;
+    ros::Publisher  imu_output_pub_, gnss_raw_output_pub_, gnss_fix_output_pub_, pps_state_pub_;
 
     sensor_msgs::Imu::Ptr imu_data_;
+    velodyne_msgs::VelodynePPS::Ptr pps_data_;
     stencil_msgs::GPS_NMEA_Stamped::Ptr gnss_raw_data_;
     sensor_msgs::NavSatFix::Ptr gnss_fix_data_;
 
@@ -64,6 +69,18 @@ namespace velodyne_pointcloud
 
     bool init_success;
 
+    double pps_output_delay_;
+
+    // diagnostic info
+    void diagTimerCallback(const ros::TimerEvent&event);
+    void imuStatus(diagnostic_updater::DiagnosticStatusWrapper &stat);
+    void ppsStatus(diagnostic_updater::DiagnosticStatusWrapper &stat);
+    void nmeaStatus(diagnostic_updater::DiagnosticStatusWrapper &stat);
+    ros::Timer diag_timer_;
+    diagnostic_updater::Updater diagnostics_;
+    boost::shared_ptr<diagnostic_updater::TopicDiagnostic> diag_position_topic_;
+    double diag_min_freq_;
+    double diag_max_freq_;
 
     static constexpr const double gyroscopeScale = 0.09766 * M_PI / 180; // rad/sec
     // const double temperatureScale = 0.1453; // C
