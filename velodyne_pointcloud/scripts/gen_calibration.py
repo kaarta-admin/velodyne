@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 # Software License Agreement (BSD License)
 #
 # Copyright (C) 2012, Austin Robot Technology

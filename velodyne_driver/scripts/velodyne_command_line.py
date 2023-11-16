@@ -366,12 +366,12 @@ if __name__ == "__main__":
                         help='Only output necessary data, such as detected ip when using --detect')
     parser.add_argument('--verbose', action='store_true',
                         help='Output extra debugging info')
-    parser.add_argument('--print-serial', action='store_true', help='Print serial number', dest="print_serial")
-    parser.add_argument('--print-model', action='store_true', help='Print model number', dest="print_model")
-    parser.add_argument('--print-info', action='store_true', help='Print sensor info', dest="print_info")
-    parser.add_argument('--print-diag', action='store_true', help='Print sensor diag', dest="print_diag")
-    parser.add_argument('--print-snapshot', action='store_true', help='Print sensor snapshot', dest="print_snapshot")
-    parser.add_argument('--print-config', action='store_true', help='Print sensor config')
+    parser.add_argument('--print-serial', action='store_true', help='print (serial number', dest="print_serial"))
+    parser.add_argument('--print-model', action='store_true', help='print (model number', dest="print_model"))
+    parser.add_argument('--print-info', action='store_true', help='print (sensor info', dest="print_info"))
+    parser.add_argument('--print-diag', action='store_true', help='print (sensor diag', dest="print_diag"))
+    parser.add_argument('--print-snapshot', action='store_true', help='print (sensor snapshot', dest="print_snapshot"))
+    parser.add_argument('--print-config', action='store_true', help='print (sensor config'))
     args = parser.parse_args()
 
     if (args.ip_addr is None):
